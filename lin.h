@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#include <string.h>
 
 // If you want to define your own decimal type (i.e. float instead of
 // double) make sure to define this before including `lin.h`:
@@ -21,7 +22,7 @@ typedef double lin_decimal_t;
 
 ///////////////////////////////////////////////////////////////////////////////
 //
-// VECTOR IMPLEMENTATION
+// VECTOR DECLARATION
 //
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -31,11 +32,26 @@ typedef enum {
 } AngleType;
 
 typedef struct {
-    /// `len` is the number of components, not the magnitude. 
+    /// `len` is the number of components, not the magnitude.
     /// For the vector length, use `lin_vec_len`.
     size_t dim;
     lin_decimal_t *elements;
 } lin_vec_t;
+
+lin_vec_t lin_vec_scalar_mult(lin_vec_t *v, lin_decimal_t k);
+lin_vec_t lin_vec_add(lin_vec_t *a, lin_vec_t *b);
+lin_vec_t lin_vec_sub(lin_vec_t *a, lin_vec_t *b);
+lin_decimal_t lin_vec_dot(lin_vec_t *a, lin_vec_t *b);
+lin_decimal_t lin_vec_len(lin_vec_t *v);
+lin_decimal_t lin_vec_angle(lin_vec_t *a, lin_vec_t *b, AngleType angle_type);
+lin_vec_t lin_vec_cross(lin_vec_t *a, lin_vec_t *b);
+void _lin_vec_print(lin_vec_t *v);
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// VECTOR IMPLEMENTATION
+//
+///////////////////////////////////////////////////////////////////////////////
 
 lin_vec_t lin_vec_scalar_mult(lin_vec_t *v, lin_decimal_t k) {
     lin_vec_t res = *v;
@@ -48,7 +64,7 @@ lin_vec_t lin_vec_scalar_mult(lin_vec_t *v, lin_decimal_t k) {
 
 lin_vec_t lin_vec_add(lin_vec_t *a, lin_vec_t *b) {
     if (a->dim != b->dim) {
-        LIN_LOG_ERROR("Length mistmatch during vector addition (%zu and %zu)", 
+        LIN_LOG_ERROR("Length mistmatch during vector addition (%zu and %zu)",
                       a->dim, b->dim);
         exit(EXIT_FAILURE);
     }
@@ -64,7 +80,7 @@ lin_vec_t lin_vec_add(lin_vec_t *a, lin_vec_t *b) {
 lin_vec_t lin_vec_sub(lin_vec_t *a, lin_vec_t *b) {
     if (a->dim != b->dim) {
         LIN_LOG_ERROR(
-            "Length mistmatch during vector subtraction (%zu and %zu)", 
+            "Length mistmatch during vector subtraction (%zu and %zu)",
             a->dim, b->dim
         );
         exit(EXIT_FAILURE);
@@ -80,12 +96,12 @@ lin_vec_t lin_vec_sub(lin_vec_t *a, lin_vec_t *b) {
 
 lin_decimal_t lin_vec_dot(lin_vec_t *a, lin_vec_t *b) {
     if (a->dim != b->dim) {
-        LIN_LOG_ERROR("Length mistmatch while taking dot product (%zu and %zu)", 
+        LIN_LOG_ERROR("Length mistmatch while taking dot product (%zu and %zu)",
                       a->dim, b->dim);
         exit(EXIT_FAILURE);
     }
 
-    lin_decimal_t sum = 0;  
+    lin_decimal_t sum = 0;
     for (size_t i = 0; i < a->dim; i++) {
         sum += a->elements[i] * b->elements[i];
     }
@@ -105,13 +121,13 @@ lin_decimal_t lin_vec_len(lin_vec_t *v) {
 
 lin_decimal_t lin_vec_angle(lin_vec_t *a, lin_vec_t *b, AngleType angle_type) {
     if (a->dim != b->dim) {
-        LIN_LOG_ERROR("Length mistmatch while taking dot product (%zu and %zu)", 
+        LIN_LOG_ERROR("Length mistmatch while taking dot product (%zu and %zu)",
                       a->dim, b->dim);
         exit(EXIT_FAILURE);
     }
 
     lin_decimal_t rads = (lin_decimal_t)acos(
-        (double)(lin_vec_dot(a, b) / 
+        (double)(lin_vec_dot(a, b) /
         (lin_vec_len(a) * lin_vec_len(b)))
     );
 
@@ -125,7 +141,7 @@ lin_decimal_t lin_vec_angle(lin_vec_t *a, lin_vec_t *b, AngleType angle_type) {
 lin_vec_t lin_vec_cross(lin_vec_t *a, lin_vec_t *b) {
     if (a->dim != b->dim) {
         LIN_LOG_ERROR(
-            "Length mistmatch while taking cross product (%zu and %zu)", 
+            "Length mistmatch while taking cross product (%zu and %zu)",
             a->dim, b->dim
         );
         exit(EXIT_FAILURE);
@@ -158,7 +174,7 @@ void _lin_vec_print(lin_vec_t *v) {
 
 ///////////////////////////////////////////////////////////////////////////////
 //
-// MATRIX IMPLEMENTATION
+// MATRIX DECLARATION
 //
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -180,11 +196,29 @@ typedef struct {
     lin_decimal_t elements[LIN_MAX_ROWS][LIN_MAX_COLS];
 } lin_mat_t;
 
+lin_mat_t lin_mat_mult(lin_mat_t *a, lin_mat_t *b);
+lin_mat_t lin_mat_add(lin_mat_t *a, lin_mat_t *b);
+lin_mat_t lin_mat_sub(lin_mat_t *a, lin_mat_t *b);
+lin_mat_t lin_mat_scalar_mult(lin_mat_t *a, lin_decimal_t k);
+lin_mat_t lin_mat_transpose(lin_mat_t *a);
+lin_decimal_t lin_mat_det(lin_mat_t *a);
+lin_mat_t lin_mat_adj(lin_mat_t *a);
+lin_mat_t lin_mat_identity(size_t n);
+lin_mat_t lin_mat_row(lin_mat_t *a, size_t n);
+lin_mat_t lin_mat_col(lin_mat_t *a, size_t n);
+void _lin_mat_print(lin_mat_t *a);
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// MATRIX IMPLEMENTATION
+//
+///////////////////////////////////////////////////////////////////////////////
+
 lin_mat_t lin_mat_mult(lin_mat_t *a, lin_mat_t *b) {
     if (a->shape.columns != b->shape.rows) {
         LIN_LOG_ERROR("Dimension mismatch during matrix multiplication \
                       [%zu x %zu] [%zu x %zu]",
-                      a->shape.rows, a->shape.columns, 
+                      a->shape.rows, a->shape.columns,
                       b->shape.rows, b->shape.columns);
         exit(EXIT_FAILURE);
     }
@@ -197,7 +231,7 @@ lin_mat_t lin_mat_mult(lin_mat_t *a, lin_mat_t *b) {
                 column[i] = b->elements[i][b_col];
             }
             lin_decimal_t d = lin_vec_dot(
-                &(lin_vec_t){a->shape.columns, a->elements[a_row]}, 
+                &(lin_vec_t){a->shape.columns, a->elements[a_row]},
                 &(lin_vec_t){b->shape.rows, column}
             );
             res.elements[a_row][b_col] = d;
@@ -209,7 +243,7 @@ lin_mat_t lin_mat_mult(lin_mat_t *a, lin_mat_t *b) {
 }
 
 lin_mat_t lin_mat_add(lin_mat_t *a, lin_mat_t *b) {
-    if (a->shape.rows != b->shape.rows 
+    if (a->shape.rows != b->shape.rows
         || a->shape.columns != b->shape.columns) {
         LIN_LOG_ERROR(
             "Dimension mismatch during matrix addition [%zu x %zu] [%zu x %zu]",
@@ -230,7 +264,7 @@ lin_mat_t lin_mat_add(lin_mat_t *a, lin_mat_t *b) {
 
 
 lin_mat_t lin_mat_sub(lin_mat_t *a, lin_mat_t *b) {
-    if (a->shape.rows != b->shape.rows 
+    if (a->shape.rows != b->shape.rows
         || a->shape.columns != b->shape.columns) {
         LIN_LOG_ERROR(
             "Dimension mismatch during matrix subtraction [%zu x %zu] [%zu x %zu]",
@@ -278,29 +312,49 @@ lin_decimal_t lin_mat_det(lin_mat_t *a) {
         exit(EXIT_FAILURE);
     }
 
-    int n = a->shape.rows;
+    size_t n = a->shape.rows;
 
     if (n == 1) {
         return a->elements[0][0];
     }
 
     if (n == 2) {
-        return a->elements[0][0] * a->elements[1][1] - 
+        return a->elements[0][0] * a->elements[1][1] -
             a->elements[0][1] * a->elements[1][0];
     }
 
-    LIN_LOG_ERROR(
-        "Determinants are not implemented for matrices larger than [2 x 2] \
-        (a is [%zu x %zu])", 
-        a->shape.rows, a->shape.columns
-    );
-    exit(EXIT_FAILURE);
+    if (n == 3) {
+        return (a->elements[0][0] * a->elements[1][1] * a->elements[2][2]) +
+        (a->elements[0][1] * a->elements[1][2] * a->elements[2][0]) +
+        (a->elements[0][2] * a->elements[1][0] * a->elements[2][1]) -
+        (a->elements[0][2] * a->elements[1][1] * a->elements[2][0]) -
+        (a->elements[0][1] * a->elements[1][0] * a->elements[2][2]) -
+        (a->elements[0][0] * a->elements[1][2] * a->elements[2][1]);
+    }
+
+    lin_decimal_t res = 0;
+    for (size_t col = 0; col < n; ++col) {
+        lin_mat_t sub = {{n - 1, n - 1}, {{0}}};
+        for (size_t i = 1; i < n; ++i) {
+            int subcol = 0;
+            for (size_t j = 0; j < n; j++) {
+                if (j == col) continue;
+
+                sub.elements[i - 1][subcol++] = a->elements[i][j];
+            }
+        }
+        int sign = (col % 2 == 0) ? 1: -1;
+        res += sign * a->elements[0][col] * lin_mat_det(&sub);
+    }
+
+    return res;
+
 }
 
 /// Where `n` is the dimension [n x n] of the output matrix
 lin_mat_t lin_mat_identity(size_t n) {
     lin_mat_t res = {{n, n}, {{0}}};
-    
+
     for (int i = 0; i < (int)n; i++) {
         res.elements[i][i] = 1;
     }
@@ -308,11 +362,29 @@ lin_mat_t lin_mat_identity(size_t n) {
     return res;
 }
 
-void _lin_mat_print(lin_mat_t *m) {
-    for (size_t row = 0; row < m->shape.rows; row++) {
+lin_mat_t lin_mat_row(lin_mat_t *a, size_t n) {
+    lin_mat_t row = {{1, a->shape.columns} , {{0}}};
+    for (size_t i = 0; i < a->shape.columns; i++) {
+        row.elements[0][i] = a->elements[n][i];
+    }
+
+    return row;
+}
+
+lin_mat_t lin_mat_col(lin_mat_t *a, size_t n) {
+    lin_mat_t col = {{a->shape.rows, 1} , {{0}}};
+    for (size_t i = 0; i < a->shape.rows; i++) {
+        col.elements[i][n] = a->elements[i][0];
+    }
+
+    return col;
+}
+
+void _lin_mat_print(lin_mat_t *a) {
+    for (size_t row = 0; row < a->shape.rows; row++) {
         printf("[ ");
-        for (size_t col = 0; col < m->shape.columns; col++) {
-            printf("%.1f ", m->elements[row][col]);
+        for (size_t col = 0; col < a->shape.columns; col++) {
+            printf("%.1f ", a->elements[row][col]);
         }
         printf("]\n");
     }
