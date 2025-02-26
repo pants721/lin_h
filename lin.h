@@ -416,7 +416,6 @@ lin_decimal_t lin_mat_minor_of_element(lin_mat_t *a, size_t row, size_t col) {
         }
     }
 
-    printf("%f\n", lin_mat_det(&sub));
     return lin_mat_det(&sub);
 }
 
