@@ -27,6 +27,10 @@ typedef double lin_decimal_t;
 //
 ///////////////////////////////////////////////////////////////////////////////
 
+#ifndef LIN_VEC_MAX_SIZE
+#define LIN_VEC_MAX_SIZE 1024
+#endif
+
 typedef enum {
     DEGREES,
     RADIANS,
@@ -37,13 +41,15 @@ typedef struct {
     lin_decimal_t *elements;
 } lin_vec_t;
 
-lin_vec_t lin_vec_scalar_mult(lin_vec_t *v, lin_decimal_t k);
-lin_vec_t lin_vec_add(lin_vec_t *a, lin_vec_t *b);
-lin_vec_t lin_vec_sub(lin_vec_t *a, lin_vec_t *b);
+lin_vec_t *lin_vec_create(size_t dim);
+lin_vec_t *lin_vec_create_from_array(size_t dim, lin_decimal_t arr[LIN_VEC_MAX_SIZE]);
+lin_vec_t *lin_vec_scalar_mult(lin_vec_t *v, lin_decimal_t k);
+lin_vec_t *lin_vec_add(lin_vec_t *a, lin_vec_t *b);
+lin_vec_t *lin_vec_sub(lin_vec_t *a, lin_vec_t *b);
 lin_decimal_t lin_vec_dot(lin_vec_t *a, lin_vec_t *b);
 lin_decimal_t lin_vec_len(lin_vec_t *v);
 lin_decimal_t lin_vec_angle(lin_vec_t *a, lin_vec_t *b, AngleType angle_type);
-lin_vec_t lin_vec_cross(lin_vec_t *a, lin_vec_t *b);
+lin_vec_t *lin_vec_cross(lin_vec_t *a, lin_vec_t *b);
 void _lin_vec_print(lin_vec_t *v);
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -52,31 +58,67 @@ void _lin_vec_print(lin_vec_t *v);
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-lin_vec_t lin_vec_scalar_mult(lin_vec_t *v, lin_decimal_t k) {
-    lin_vec_t res = *v;
+lin_vec_t *lin_vec_create(size_t dim) {
+    lin_vec_t *vec = (lin_vec_t *)malloc(sizeof(lin_vec_t));
+    if (vec == NULL) {
+        LIN_LOG_ERROR("Failed to allocate memory for lin_vec_t");
+        return NULL;
+    }
+
+    vec->elements = (lin_decimal_t *)malloc(dim * sizeof(lin_decimal_t));
+    if (vec->elements == NULL) {
+        LIN_LOG_ERROR("Failed to allocate memory for vector elements");
+        free(vec);
+        return NULL;
+    }
+
+    vec->dim = dim;
+    return vec;
+}
+lin_vec_t *lin_vec_create_from_array(size_t dim, lin_decimal_t arr[LIN_VEC_MAX_SIZE]) {
+    lin_vec_t *vec = lin_vec_create(dim);
+    
+    for (size_t i = 0; i < dim; i++) {
+        lin_decimal_t *n = &arr[i];
+        if (n == NULL) {
+            LIN_LOG_ERROR(
+                "Array passed to lin_vec_create_from_array is incompatible with given dimension"
+            );
+            free(vec);
+            return NULL;
+        }
+
+        vec->elements[i] = *n;
+    }
+    
+    return vec;
+}
+
+lin_vec_t *lin_vec_scalar_mult(lin_vec_t *v, lin_decimal_t k) {
+    lin_vec_t *res = lin_vec_create(v->dim);
     for (size_t i = 0; i < v->dim; i++) {
-        res.elements[i] *= k;
+        res->elements[i] = v->elements[i] * k;
     }
 
     return res;
 }
 
-lin_vec_t lin_vec_add(lin_vec_t *a, lin_vec_t *b) {
+lin_vec_t *lin_vec_add(lin_vec_t *a, lin_vec_t *b) {
     if (a->dim != b->dim) {
         LIN_LOG_ERROR("Length mistmatch during vector addition (%zu and %zu)",
                       a->dim, b->dim);
         exit(EXIT_FAILURE);
     }
 
-    lin_vec_t res = *a;
+    lin_vec_t *res = lin_vec_create(a->dim);
     for (size_t i = 0; i < a->dim; i++) {
-        res.elements[i] += b->elements[i];
+        res->elements[i] = a->elements[i] + b->elements[i];
     }
 
     return res;
 }
 
-lin_vec_t lin_vec_sub(lin_vec_t *a, lin_vec_t *b) {
+lin_vec_t *lin_vec_sub(lin_vec_t *a, lin_vec_t *b) {
     if (a->dim != b->dim) {
         LIN_LOG_ERROR(
             "Length mistmatch during vector subtraction (%zu and %zu)",
@@ -85,9 +127,9 @@ lin_vec_t lin_vec_sub(lin_vec_t *a, lin_vec_t *b) {
         exit(EXIT_FAILURE);
     }
 
-    lin_vec_t res = *a;
+    lin_vec_t *res = lin_vec_create(a->dim);
     for (size_t i = 0; i < a->dim; i++) {
-        res.elements[i] -= b->elements[i];
+        res->elements[i] = a->elements[i] - b->elements[i];
     }
 
     return res;
@@ -137,7 +179,7 @@ lin_decimal_t lin_vec_angle(lin_vec_t *a, lin_vec_t *b, AngleType angle_type) {
     return rads;
 }
 
-lin_vec_t lin_vec_cross(lin_vec_t *a, lin_vec_t *b) {
+lin_vec_t *lin_vec_cross(lin_vec_t *a, lin_vec_t *b) {
     if (a->dim != b->dim) {
         LIN_LOG_ERROR(
             "Length mistmatch while taking cross product (%zu and %zu)",
@@ -160,7 +202,7 @@ lin_vec_t lin_vec_cross(lin_vec_t *a, lin_vec_t *b) {
         a->elements[0] * b->elements[1] - a->elements[1] * b->elements[0],
     };
 
-    return (lin_vec_t){3, res_elements};
+    return lin_vec_create_from_array(3, res_elements);
 }
 
 void _lin_vec_print(lin_vec_t *v) {
@@ -177,12 +219,12 @@ void _lin_vec_print(lin_vec_t *v) {
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-#ifndef LIN_MAX_ROWS
-#define LIN_MAX_ROWS 1024
+#ifndef LIN_MAT_MAX_ROWS
+#define LIN_MAT_MAX_ROWS 1024
 #endif
 
-#ifndef LIN_MAX_COLS
-#define LIN_MAX_COLS 1024
+#ifndef LIN_MAT_MAX_COLS
+#define LIN_MAT_MAX_COLS 1024
 #endif
 
 typedef struct {
@@ -196,7 +238,7 @@ typedef struct {
 } lin_mat_t;
 
 lin_mat_t *lin_mat_create(lin_mat_shape_t shape);
-lin_mat_t *lin_mat_create_from_array(lin_mat_shape_t shape, lin_decimal_t arr[LIN_MAX_ROWS][LIN_MAX_COLS]);
+lin_mat_t *lin_mat_create_from_array(lin_mat_shape_t shape, lin_decimal_t arr[LIN_MAT_MAX_ROWS][LIN_MAT_MAX_COLS]);
 lin_mat_t *lin_mat_mult(lin_mat_t *a, lin_mat_t *b);
 lin_mat_t *lin_mat_add(lin_mat_t *a, lin_mat_t *b);
 lin_mat_t *lin_mat_sub(lin_mat_t *a, lin_mat_t *b);
@@ -259,7 +301,7 @@ lin_mat_t *lin_mat_create(lin_mat_shape_t shape) {
     return mat;
 }
 
-lin_mat_t *lin_mat_create_from_array(lin_mat_shape_t shape, lin_decimal_t arr[LIN_MAX_ROWS][LIN_MAX_COLS]) {
+lin_mat_t *lin_mat_create_from_array(lin_mat_shape_t shape, lin_decimal_t arr[LIN_MAT_MAX_ROWS][LIN_MAT_MAX_COLS]) {
     lin_mat_t *mat = lin_mat_create(shape);
     
     for (size_t i = 0; i < shape.rows; i++) {
@@ -446,9 +488,9 @@ lin_mat_t *lin_mat_col(lin_mat_t *a, size_t n) {
 }
 
 lin_vec_t *lin_mat_row_vec(lin_mat_t *a, size_t n) {
-    lin_vec_t *row = malloc(sizeof(lin_vec_t));
+    lin_vec_t *row = (lin_vec_t *)malloc(sizeof(lin_vec_t));
     row->dim = a->shape.columns;
-    row->elements = malloc(sizeof(lin_decimal_t) * a->shape.columns);
+    row->elements = (lin_decimal_t *)malloc(sizeof(lin_decimal_t) * a->shape.columns);
     for (size_t i = 0; i < a->shape.columns; i++) {
         row->elements[i] = a->elements[n][i];
     }
@@ -456,9 +498,9 @@ lin_vec_t *lin_mat_row_vec(lin_mat_t *a, size_t n) {
 }
 
 lin_vec_t *lin_mat_col_vec(lin_mat_t *a, size_t n) {
-    lin_vec_t *col = malloc(sizeof(lin_vec_t));
+    lin_vec_t *col = (lin_vec_t *)malloc(sizeof(lin_vec_t));
     col->dim = a->shape.columns;
-    col->elements = malloc(sizeof(lin_decimal_t) * a->shape.columns);
+    col->elements = (lin_decimal_t *)malloc(sizeof(lin_decimal_t) * a->shape.columns);
     for (size_t i = 0; i < a->shape.rows; i++) {
         col->elements[i] = a->elements[i][n];
     }
