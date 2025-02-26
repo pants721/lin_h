@@ -197,23 +197,23 @@ typedef struct {
 
 lin_mat_t *lin_mat_create(lin_mat_shape_t shape);
 lin_mat_t *lin_mat_create_from_array(lin_mat_shape_t shape, lin_decimal_t arr[LIN_MAX_ROWS][LIN_MAX_COLS]);
-lin_mat_t lin_mat_mult(lin_mat_t *a, lin_mat_t *b);
-lin_mat_t lin_mat_add(lin_mat_t *a, lin_mat_t *b);
-lin_mat_t lin_mat_sub(lin_mat_t *a, lin_mat_t *b);
-lin_mat_t lin_mat_scalar_mult(lin_mat_t *a, lin_decimal_t k);
-lin_mat_t lin_mat_transpose(lin_mat_t *a);
+lin_mat_t *lin_mat_mult(lin_mat_t *a, lin_mat_t *b);
+lin_mat_t *lin_mat_add(lin_mat_t *a, lin_mat_t *b);
+lin_mat_t *lin_mat_sub(lin_mat_t *a, lin_mat_t *b);
+lin_mat_t *lin_mat_scalar_mult(lin_mat_t *a, lin_decimal_t k);
+lin_mat_t *lin_mat_transpose(lin_mat_t *a);
 lin_decimal_t lin_mat_det(lin_mat_t *a);
-lin_mat_t lin_mat_identity(size_t n);
-lin_mat_t lin_mat_row(lin_mat_t *a, size_t n);
+lin_mat_t *lin_mat_identity(size_t n);
+lin_mat_t *lin_mat_row(lin_mat_t *a, size_t n);
 lin_mat_t *lin_mat_col(lin_mat_t *a, size_t n);
-lin_vec_t lin_mat_row_vec(lin_mat_t *a, size_t n);
-lin_vec_t lin_mat_col_vec(lin_mat_t *a, size_t n);
+lin_vec_t *lin_mat_row_vec(lin_mat_t *a, size_t n);
+lin_vec_t *lin_mat_col_vec(lin_mat_t *a, size_t n);
 lin_decimal_t lin_mat_minor_of_element(lin_mat_t *a, size_t row, size_t col);
-lin_mat_t lin_mat_minor(lin_mat_t *a);
+lin_mat_t *lin_mat_minor(lin_mat_t *a);
 lin_decimal_t lin_mat_cofactor_of_element(lin_mat_t *a, size_t row, size_t col);
-lin_mat_t lin_mat_cofactor(lin_mat_t *a);
-lin_mat_t lin_mat_adj(lin_mat_t *a);
-lin_mat_t lin_mat_inv(lin_mat_t *a);
+lin_mat_t *lin_mat_cofactor(lin_mat_t *a);
+lin_mat_t *lin_mat_adj(lin_mat_t *a);
+lin_mat_t *lin_mat_inv(lin_mat_t *a);
 void _lin_mat_print(lin_mat_t *a);
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -281,7 +281,7 @@ lin_mat_t *lin_mat_create_from_array(lin_mat_shape_t shape, lin_decimal_t arr[LI
     return mat;
 }
 
-lin_mat_t lin_mat_mult(lin_mat_t *a, lin_mat_t *b) {
+lin_mat_t *lin_mat_mult(lin_mat_t *a, lin_mat_t *b) {
     if (a->shape.columns != b->shape.rows) {
         LIN_LOG_ERROR("Dimension mismatch during matrix multiplication \
                       [%zu x %zu] [%zu x %zu]",
@@ -290,7 +290,7 @@ lin_mat_t lin_mat_mult(lin_mat_t *a, lin_mat_t *b) {
         exit(EXIT_FAILURE);
     }
 
-    lin_mat_t res = {{a->shape.rows, b->shape.columns}, {{0}}};
+    lin_mat_t *res = lin_mat_create(a->shape);
     for (size_t a_row = 0; a_row < a->shape.rows; a_row++) {
         for (size_t b_col = 0; b_col < b->shape.columns; b_col++) {
             lin_decimal_t column[b->shape.rows];
@@ -301,7 +301,7 @@ lin_mat_t lin_mat_mult(lin_mat_t *a, lin_mat_t *b) {
                 &(lin_vec_t){a->shape.columns, a->elements[a_row]},
                 &(lin_vec_t){b->shape.rows, column}
             );
-            res.elements[a_row][b_col] = d;
+            res->elements[a_row][b_col] = d;
         }
     }
 
@@ -309,7 +309,7 @@ lin_mat_t lin_mat_mult(lin_mat_t *a, lin_mat_t *b) {
     return res;
 }
 
-lin_mat_t lin_mat_add(lin_mat_t *a, lin_mat_t *b) {
+lin_mat_t *lin_mat_add(lin_mat_t *a, lin_mat_t *b) {
     if (a->shape.rows != b->shape.rows
         || a->shape.columns != b->shape.columns) {
         LIN_LOG_ERROR(
@@ -319,10 +319,10 @@ lin_mat_t lin_mat_add(lin_mat_t *a, lin_mat_t *b) {
         exit(EXIT_FAILURE);
     }
 
-    lin_mat_t res = *a;
+    lin_mat_t *res = lin_mat_create(a->shape);
     for (size_t row = 0; row < a->shape.rows; row++) {
         for (size_t col = 0; col < a->shape.columns; col++) {
-            res.elements[row][col] += b->elements[row][col];
+            res->elements[row][col] = a->elements[row][col] + b->elements[row][col];
         }
     }
 
@@ -330,42 +330,42 @@ lin_mat_t lin_mat_add(lin_mat_t *a, lin_mat_t *b) {
 }
 
 
-lin_mat_t lin_mat_sub(lin_mat_t *a, lin_mat_t *b) {
+lin_mat_t *lin_mat_sub(lin_mat_t *a, lin_mat_t *b) {
     if (a->shape.rows != b->shape.rows
         || a->shape.columns != b->shape.columns) {
         LIN_LOG_ERROR(
-            "Dimension mismatch during matrix subtraction [%zu x %zu] [%zu x %zu]",
+            "Dimension mismatch during matrix addition [%zu x %zu] [%zu x %zu]",
             a->shape.rows, a->shape.columns, b->shape.rows, b->shape.columns
         );
         exit(EXIT_FAILURE);
     }
 
-    lin_mat_t res = *a;
+    lin_mat_t *res = lin_mat_create(a->shape);
     for (size_t row = 0; row < a->shape.rows; row++) {
         for (size_t col = 0; col < a->shape.columns; col++) {
-            res.elements[row][col] -= b->elements[row][col];
+            res->elements[row][col] = a->elements[row][col] - b->elements[row][col];
         }
     }
 
     return res;
 }
 
-lin_mat_t lin_mat_scalar_mult(lin_mat_t *a, lin_decimal_t k) {
-    lin_mat_t res = *a;
+lin_mat_t *lin_mat_scalar_mult(lin_mat_t *a, lin_decimal_t k) {
+    lin_mat_t *res = lin_mat_create(a->shape);
     for (size_t row = 0; row < a->shape.rows; row++) {
         for (size_t col = 0; col < a->shape.columns; col++) {
-            res.elements[row][col] *= k;
+            res->elements[row][col] = a->elements[row][col] * k;
         }
     }
 
     return res;
 }
 
-lin_mat_t lin_mat_transpose(lin_mat_t *a) {
-    lin_mat_t res = *a;
+lin_mat_t *lin_mat_transpose(lin_mat_t *a) {
+    lin_mat_t *res = lin_mat_create((lin_mat_shape_t){a->shape.columns, a->shape.rows});
     for (size_t col = 0; col < a->shape.columns; col++) {
         for (size_t row = 0; row < a->shape.rows; row++) {
-            res.elements[col][row] = a->elements[row][col];
+            res->elements[col][row] = a->elements[row][col];
         }
     }
 
@@ -401,17 +401,17 @@ lin_decimal_t lin_mat_det(lin_mat_t *a) {
 
     lin_decimal_t res = 0;
     for (size_t col = 0; col < n; ++col) {
-        lin_mat_t sub = {{n - 1, n - 1}, {{0}}};
+        lin_mat_t *sub = lin_mat_create((lin_mat_shape_t){n - 1, n - 1});
         for (size_t i = 1; i < n; ++i) {
             int subcol = 0;
             for (size_t j = 0; j < n; j++) {
                 if (j == col) continue;
 
-                sub.elements[i - 1][subcol++] = a->elements[i][j];
+                sub->elements[i - 1][subcol++] = a->elements[i][j];
             }
         }
         int sign = (col % 2 == 0) ? 1: -1;
-        res += sign * a->elements[0][col] * lin_mat_det(&sub);
+        res += sign * a->elements[0][col] * lin_mat_det(sub);
     }
 
     return res;
@@ -419,20 +419,20 @@ lin_decimal_t lin_mat_det(lin_mat_t *a) {
 }
 
 /// Where `n` is the dimension [n x n] of the output matrix
-lin_mat_t lin_mat_identity(size_t n) {
-    lin_mat_t res = {{n, n}, {{0}}};
+lin_mat_t *lin_mat_identity(size_t n) {
+    lin_mat_t *res = lin_mat_create((lin_mat_shape_t){n, n});
 
     for (int i = 0; i < (int)n; i++) {
-        res.elements[i][i] = 1;
+        res->elements[i][i] = 1;
     }
 
     return res;
 }
 
-lin_mat_t lin_mat_row(lin_mat_t *a, size_t n) {
-    lin_mat_t row = {{1, a->shape.columns} , {{0}}};
+lin_mat_t *lin_mat_row(lin_mat_t *a, size_t n) {
+    lin_mat_t *row = lin_mat_create((lin_mat_shape_t){1, a->shape.columns});
     for (size_t i = 0; i < a->shape.columns; i++) {
-        row.elements[0][i] = a->elements[n][i];
+        row->elements[0][i] = a->elements[n][i];
     }
     return row;
 }
@@ -445,18 +445,22 @@ lin_mat_t *lin_mat_col(lin_mat_t *a, size_t n) {
     return col;
 }
 
-lin_vec_t lin_mat_row_vec(lin_mat_t *a, size_t n) {
-    lin_vec_t row = {a->shape.columns, malloc(sizeof(lin_decimal_t) * a->shape.columns)};
+lin_vec_t *lin_mat_row_vec(lin_mat_t *a, size_t n) {
+    lin_vec_t *row = malloc(sizeof(lin_vec_t));
+    row->dim = a->shape.columns;
+    row->elements = malloc(sizeof(lin_decimal_t) * a->shape.columns);
     for (size_t i = 0; i < a->shape.columns; i++) {
-        row.elements[i] = a->elements[n][i];
+        row->elements[i] = a->elements[n][i];
     }
     return row;
 }
 
-lin_vec_t lin_mat_col_vec(lin_mat_t *a, size_t n) {
-    lin_vec_t col = {a->shape.rows, malloc(sizeof(lin_decimal_t) * a->shape.rows)};
+lin_vec_t *lin_mat_col_vec(lin_mat_t *a, size_t n) {
+    lin_vec_t *col = malloc(sizeof(lin_vec_t));
+    col->dim = a->shape.columns;
+    col->elements = malloc(sizeof(lin_decimal_t) * a->shape.columns);
     for (size_t i = 0; i < a->shape.rows; i++) {
-        col.elements[i] = a->elements[i][n];
+        col->elements[i] = a->elements[i][n];
     }
     return col;
 }
@@ -469,7 +473,7 @@ lin_decimal_t lin_mat_minor_of_element(lin_mat_t *a, size_t row, size_t col) {
     }
 
     size_t n = a->shape.rows;
-    lin_mat_t sub = {{n - 1, n - 1}, {{0}}};
+    lin_mat_t *sub = lin_mat_create((lin_mat_shape_t){n - 1, n - 1});
 
     bool passed_row = false;
     for (size_t i = 0; i < a->shape.rows; i++) {
@@ -487,25 +491,25 @@ lin_decimal_t lin_mat_minor_of_element(lin_mat_t *a, size_t row, size_t col) {
 
             size_t sub_row = passed_row ? i - 1 : i;
             size_t sub_col = passed_col ? j - 1 : j;
-            sub.elements[sub_row][sub_col] = a->elements[i][j];
+            sub->elements[sub_row][sub_col] = a->elements[i][j];
         }
     }
 
-    return lin_mat_det(&sub);
+    return lin_mat_det(sub);
 }
 
-lin_mat_t lin_mat_minor(lin_mat_t *a) {
+lin_mat_t *lin_mat_minor(lin_mat_t *a) {
     if (a->shape.rows != a->shape.columns) {
         LIN_LOG_ERROR("Cannot find minor matrix of non-square matrix [%zu x %zu]",
                       a->shape.rows, a->shape.columns);
         exit(EXIT_FAILURE);
     }
 
-    lin_mat_t res = *a;
+    lin_mat_t *res = lin_mat_create(a->shape);
 
     for (size_t row = 0; row < a->shape.rows; row++) {
         for (size_t col = 0; col < a->shape.columns; col++) {
-            res.elements[row][col] = lin_mat_minor_of_element(a, row, col);
+            res->elements[row][col] = lin_mat_minor_of_element(a, row, col);
         }
     }
 
@@ -525,46 +529,46 @@ lin_decimal_t lin_mat_cofactor_of_element(lin_mat_t *a, size_t row, size_t col) 
     return mul * min;
 }
 
-lin_mat_t lin_mat_cofactor(lin_mat_t *a) {
+lin_mat_t *lin_mat_cofactor(lin_mat_t *a) {
     if (a->shape.rows != a->shape.columns) {
         LIN_LOG_ERROR("Cannot find cofactor matrix of non-square matrix [%zu x %zu]",
                       a->shape.rows, a->shape.columns);
         exit(EXIT_FAILURE);
     }
 
-    lin_mat_t res = *a;
+    lin_mat_t *res = lin_mat_create(a->shape);
 
     for (size_t row = 0; row < a->shape.rows; row++) {
         for (size_t col = 0; col < a->shape.columns; col++) {
-            res.elements[row][col] = lin_mat_cofactor_of_element(a, row, col);
+            res->elements[row][col] = lin_mat_cofactor_of_element(a, row, col);
         }
     }
 
     return res;
 }
 
-lin_mat_t lin_mat_adj(lin_mat_t *a) {
+lin_mat_t *lin_mat_adj(lin_mat_t *a) {
     if (a->shape.rows != a->shape.columns) {
         LIN_LOG_ERROR("Cannot find adjoint matrix of non-square matrix [%zu x %zu]",
                       a->shape.rows, a->shape.columns);
         exit(EXIT_FAILURE);
     }
 
-    lin_mat_t min = lin_mat_cofactor(a);
-    return lin_mat_transpose(&min);
+    lin_mat_t *min = lin_mat_cofactor(a);
+    return lin_mat_transpose(min);
 }
 
-lin_mat_t lin_mat_inv(lin_mat_t *a) {
+lin_mat_t *lin_mat_inv(lin_mat_t *a) {
     if (a->shape.rows != a->shape.columns) {
         LIN_LOG_ERROR("Cannot find inverse of non-square matrix [%zu x %zu]",
                       a->shape.rows, a->shape.columns);
         exit(EXIT_FAILURE);
     }
 
-    lin_mat_t adj = lin_mat_adj(a);
+    lin_mat_t *adj = lin_mat_adj(a);
     lin_decimal_t det = lin_mat_det(a);
 
-    return lin_mat_scalar_mult(&adj, (1.0 / det));
+    return lin_mat_scalar_mult(adj, (1.0 / det));
 }
 
 void _lin_mat_print(lin_mat_t *a) {
