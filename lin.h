@@ -33,8 +33,6 @@ typedef enum {
 } AngleType;
 
 typedef struct {
-    /// `len` is the number of components, not the magnitude.
-    /// For the vector length, use `lin_vec_len`.
     size_t dim;
     lin_decimal_t *elements;
 } lin_vec_t;
@@ -180,11 +178,11 @@ void _lin_vec_print(lin_vec_t *v) {
 ///////////////////////////////////////////////////////////////////////////////
 
 #ifndef LIN_MAX_ROWS
-#define LIN_MAX_ROWS 512
+#define LIN_MAX_ROWS 1024
 #endif
 
 #ifndef LIN_MAX_COLS
-#define LIN_MAX_COLS 512
+#define LIN_MAX_COLS 1024
 #endif
 
 typedef struct {
@@ -194,9 +192,11 @@ typedef struct {
 
 typedef struct {
     lin_mat_shape_t shape;
-    lin_decimal_t elements[LIN_MAX_ROWS][LIN_MAX_COLS];
+    lin_decimal_t **elements;
 } lin_mat_t;
 
+lin_mat_t *lin_mat_create(lin_mat_shape_t shape);
+lin_mat_t *lin_mat_create_from_array(lin_mat_shape_t shape, lin_decimal_t arr[LIN_MAX_ROWS][LIN_MAX_COLS]);
 lin_mat_t lin_mat_mult(lin_mat_t *a, lin_mat_t *b);
 lin_mat_t lin_mat_add(lin_mat_t *a, lin_mat_t *b);
 lin_mat_t lin_mat_sub(lin_mat_t *a, lin_mat_t *b);
@@ -205,7 +205,9 @@ lin_mat_t lin_mat_transpose(lin_mat_t *a);
 lin_decimal_t lin_mat_det(lin_mat_t *a);
 lin_mat_t lin_mat_identity(size_t n);
 lin_mat_t lin_mat_row(lin_mat_t *a, size_t n);
-lin_mat_t lin_mat_col(lin_mat_t *a, size_t n);
+lin_mat_t *lin_mat_col(lin_mat_t *a, size_t n);
+lin_vec_t lin_mat_row_vec(lin_mat_t *a, size_t n);
+lin_vec_t lin_mat_col_vec(lin_mat_t *a, size_t n);
 lin_decimal_t lin_mat_minor_of_element(lin_mat_t *a, size_t row, size_t col);
 lin_mat_t lin_mat_minor(lin_mat_t *a);
 lin_decimal_t lin_mat_cofactor_of_element(lin_mat_t *a, size_t row, size_t col);
@@ -219,6 +221,65 @@ void _lin_mat_print(lin_mat_t *a);
 // MATRIX IMPLEMENTATION
 //
 ///////////////////////////////////////////////////////////////////////////////
+
+lin_mat_t *lin_mat_create(lin_mat_shape_t shape) {
+    lin_mat_t *mat = (lin_mat_t *)malloc(sizeof(lin_mat_t));
+
+    if (mat == NULL) {
+        return NULL;
+    }
+
+    mat->shape = shape;
+    mat->elements = (lin_decimal_t **)malloc(shape.rows * sizeof(lin_decimal_t *));
+    if (mat->elements == NULL) {
+        LIN_LOG_ERROR(
+            "Failed to allocate memory for rows in matrix of dimensions [%zu x %zu]", 
+            shape.rows, shape.columns
+        );
+        return NULL;
+    }
+
+    for (size_t i = 0; i < shape.rows; i++) {
+        mat->elements[i] = (lin_decimal_t *)malloc(shape.columns * sizeof(lin_decimal_t));
+        if (mat->elements[i] == NULL) {
+            LIN_LOG_ERROR(
+                "Failed to allocate memory for columns in matrix of dimensions [%zu x %zu]", 
+                shape.rows, shape.columns
+            );
+
+            for (size_t j = 0; j < i; j++) {
+                free(mat->elements[j]);
+            }
+            free(mat->elements);
+            free(mat);
+            return NULL;
+        }
+    }
+
+    return mat;
+}
+
+lin_mat_t *lin_mat_create_from_array(lin_mat_shape_t shape, lin_decimal_t arr[LIN_MAX_ROWS][LIN_MAX_COLS]) {
+    lin_mat_t *mat = lin_mat_create(shape);
+    
+    for (size_t i = 0; i < shape.rows; i++) {
+        for (size_t j = 0; j < shape.columns; j++) {
+            lin_decimal_t *n = &arr[i][j];
+            if (n == NULL) {
+                LIN_LOG_ERROR(
+                    "Array passed to lin_mat_create_from_array is of incompatible shape with matrix [%zu x %zu]",
+                    shape.rows, shape.columns
+                );
+             
+                return NULL;
+            }
+
+            mat->elements[i][j] = *n;
+        }
+    }
+
+    return mat;
+}
 
 lin_mat_t lin_mat_mult(lin_mat_t *a, lin_mat_t *b) {
     if (a->shape.columns != b->shape.rows) {
@@ -373,16 +434,30 @@ lin_mat_t lin_mat_row(lin_mat_t *a, size_t n) {
     for (size_t i = 0; i < a->shape.columns; i++) {
         row.elements[0][i] = a->elements[n][i];
     }
-
     return row;
 }
 
-lin_mat_t lin_mat_col(lin_mat_t *a, size_t n) {
-    lin_mat_t col = {{a->shape.rows, 1} , {{0}}};
+lin_mat_t *lin_mat_col(lin_mat_t *a, size_t n) {
+    lin_mat_t *col = lin_mat_create((lin_mat_shape_t){a->shape.rows, 1});
     for (size_t i = 0; i < a->shape.rows; i++) {
-        col.elements[i][n] = a->elements[i][0];
+        col->elements[i][0] = a->elements[i][n];
     }
+    return col;
+}
 
+lin_vec_t lin_mat_row_vec(lin_mat_t *a, size_t n) {
+    lin_vec_t row = {a->shape.columns, malloc(sizeof(lin_decimal_t) * a->shape.columns)};
+    for (size_t i = 0; i < a->shape.columns; i++) {
+        row.elements[i] = a->elements[n][i];
+    }
+    return row;
+}
+
+lin_vec_t lin_mat_col_vec(lin_mat_t *a, size_t n) {
+    lin_vec_t col = {a->shape.rows, malloc(sizeof(lin_decimal_t) * a->shape.rows)};
+    for (size_t i = 0; i < a->shape.rows; i++) {
+        col.elements[i] = a->elements[i][n];
+    }
     return col;
 }
 
