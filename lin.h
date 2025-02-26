@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdbool.h>
 #include <math.h>
 #include <string.h>
 
@@ -202,10 +203,15 @@ lin_mat_t lin_mat_sub(lin_mat_t *a, lin_mat_t *b);
 lin_mat_t lin_mat_scalar_mult(lin_mat_t *a, lin_decimal_t k);
 lin_mat_t lin_mat_transpose(lin_mat_t *a);
 lin_decimal_t lin_mat_det(lin_mat_t *a);
-lin_mat_t lin_mat_adj(lin_mat_t *a);
 lin_mat_t lin_mat_identity(size_t n);
 lin_mat_t lin_mat_row(lin_mat_t *a, size_t n);
 lin_mat_t lin_mat_col(lin_mat_t *a, size_t n);
+lin_decimal_t lin_mat_minor_of_element(lin_mat_t *a, size_t row, size_t col);
+lin_mat_t lin_mat_minor(lin_mat_t *a);
+lin_decimal_t lin_mat_cofactor_of_element(lin_mat_t *a, size_t row, size_t col);
+lin_mat_t lin_mat_cofactor(lin_mat_t *a);
+lin_mat_t lin_mat_adj(lin_mat_t *a);
+lin_mat_t lin_mat_inv(lin_mat_t *a);
 void _lin_mat_print(lin_mat_t *a);
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -380,11 +386,118 @@ lin_mat_t lin_mat_col(lin_mat_t *a, size_t n) {
     return col;
 }
 
+lin_decimal_t lin_mat_minor_of_element(lin_mat_t *a, size_t row, size_t col) {
+    if (a->shape.rows != a->shape.columns) {
+        LIN_LOG_ERROR("Cannot take minor of element of non-square matrix [%zu x %zu]",
+                      a->shape.rows, a->shape.columns);
+        exit(EXIT_FAILURE);
+    }
+
+    size_t n = a->shape.rows;
+    lin_mat_t sub = {{n - 1, n - 1}, {{0}}};
+
+    bool passed_row = false;
+    for (size_t i = 0; i < a->shape.rows; i++) {
+        if (i == row) {
+            passed_row = true;
+            continue;
+        }
+
+        bool passed_col = false;
+        for (size_t j = 0; j < a->shape.columns; j++) {
+            if (j == col) {
+                passed_col = true;
+                continue;
+            }
+
+            size_t sub_row = passed_row ? i - 1 : i;
+            size_t sub_col = passed_col ? j - 1 : j;
+            sub.elements[sub_row][sub_col] = a->elements[i][j];
+        }
+    }
+
+    printf("%f\n", lin_mat_det(&sub));
+    return lin_mat_det(&sub);
+}
+
+lin_mat_t lin_mat_minor(lin_mat_t *a) {
+    if (a->shape.rows != a->shape.columns) {
+        LIN_LOG_ERROR("Cannot find minor matrix of non-square matrix [%zu x %zu]",
+                      a->shape.rows, a->shape.columns);
+        exit(EXIT_FAILURE);
+    }
+
+    lin_mat_t res = *a;
+
+    for (size_t row = 0; row < a->shape.rows; row++) {
+        for (size_t col = 0; col < a->shape.columns; col++) {
+            res.elements[row][col] = lin_mat_minor_of_element(a, row, col);
+        }
+    }
+
+    return res;
+}
+
+lin_decimal_t lin_mat_cofactor_of_element(lin_mat_t *a, size_t row, size_t col) {
+    if (a->shape.rows != a->shape.columns) {
+        LIN_LOG_ERROR("Cannot find cofactor of element of non-square matrix [%zu x %zu]",
+                      a->shape.rows, a->shape.columns);
+        exit(EXIT_FAILURE);
+    }
+
+    lin_decimal_t min = lin_mat_minor_of_element(a, row, col);
+    lin_decimal_t mul  = (lin_decimal_t)pow(-1.0, (double)(row + col));
+
+    return mul * min;
+}
+
+lin_mat_t lin_mat_cofactor(lin_mat_t *a) {
+    if (a->shape.rows != a->shape.columns) {
+        LIN_LOG_ERROR("Cannot find cofactor matrix of non-square matrix [%zu x %zu]",
+                      a->shape.rows, a->shape.columns);
+        exit(EXIT_FAILURE);
+    }
+
+    lin_mat_t res = *a;
+
+    for (size_t row = 0; row < a->shape.rows; row++) {
+        for (size_t col = 0; col < a->shape.columns; col++) {
+            res.elements[row][col] = lin_mat_cofactor_of_element(a, row, col);
+        }
+    }
+
+    return res;
+}
+
+lin_mat_t lin_mat_adj(lin_mat_t *a) {
+    if (a->shape.rows != a->shape.columns) {
+        LIN_LOG_ERROR("Cannot find adjoint matrix of non-square matrix [%zu x %zu]",
+                      a->shape.rows, a->shape.columns);
+        exit(EXIT_FAILURE);
+    }
+
+    lin_mat_t min = lin_mat_cofactor(a);
+    return lin_mat_transpose(&min);
+}
+
+lin_mat_t lin_mat_inv(lin_mat_t *a) {
+    if (a->shape.rows != a->shape.columns) {
+        LIN_LOG_ERROR("Cannot find inverse of non-square matrix [%zu x %zu]",
+                      a->shape.rows, a->shape.columns);
+        exit(EXIT_FAILURE);
+    }
+
+    lin_mat_t adj = lin_mat_adj(a);
+    lin_decimal_t det = lin_mat_det(a);
+
+    return lin_mat_scalar_mult(&adj, (1.0 / det));
+}
+
 void _lin_mat_print(lin_mat_t *a) {
     for (size_t row = 0; row < a->shape.rows; row++) {
         printf("[ ");
         for (size_t col = 0; col < a->shape.columns; col++) {
-            printf("%.1f ", a->elements[row][col]);
+            printf("%f ", a->elements[row][col]);
         }
         printf("]\n");
     }
