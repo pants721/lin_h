@@ -196,7 +196,7 @@ lin_vec_t *lin_vec_cross(lin_vec_t *a, lin_vec_t *b) {
         exit(EXIT_FAILURE);
     }
 
-    lin_decimal_t res_elements[3] = {
+    lin_decimal_t res_elements[LIN_VEC_MAX_SIZE] = {
         a->elements[1] * a->elements[2] - a->elements[2] * b->elements[1],
         a->elements[2] * b->elements[0] - a->elements[0] * b->elements[2],
         a->elements[0] * b->elements[1] - a->elements[1] * b->elements[0],

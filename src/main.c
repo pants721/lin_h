@@ -7,7 +7,7 @@
 
 
 int main(int argc, char **argv) {
-    float els[LIN_MAX_ROWS][LIN_MAX_COLS] = {
+    float els[LIN_MAT_MAX_ROWS][LIN_MAT_MAX_COLS] = {
         {3, 1, 6},
         {5, 2, -1},
         {-4, 3, 0}
