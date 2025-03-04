@@ -1,6 +1,6 @@
 project('lin_h', 'c',
   version : '0.1',
-  default_options : ['warning_level=3'])
+  default_options : ['warning_level=everything'])
 
 unity_subproject = subproject('unity')
 unity_dep = unity_subproject.get_variable('unity_dep')
