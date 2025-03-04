@@ -14,7 +14,7 @@
 // #define lin_decimal_t float
 // #include "lin.h"
 #ifndef lin_decimal_t
-typedef double lin_decimal_t;
+typedef float lin_decimal_t;
 #endif
 
 #define LIN_LOG_ERROR(fmt, ...) \

@@ -1,6 +1,5 @@
 #include "unity.h"
 #include "unity_internals.h"
-#define lin_decimal_t float
 #include "lin.h"
 
 void setUp(void) {

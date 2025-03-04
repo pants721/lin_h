@@ -1,15 +1,6 @@
 #include "unity.h"
 #include "unity_internals.h"
-#define lin_decimal_t float
 #include "lin.h"
-
-void setUp(void) {
-    // set stuff up here
-}
-
-void tearDown(void) {
-    // clean stuff up here
-}
 
 void create(void) {
     lin_vec_t *vec = lin_vec_create(3);
