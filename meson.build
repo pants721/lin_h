@@ -14,7 +14,15 @@ test_mat = executable('test_mat',
   link_args : '-lm',
   install : false)
 
+test_vec = executable('test_vec',
+  sources : ['test/vec.c'],
+  include_directories : [inc],
+  dependencies : [unity_dep],
+  link_args : '-lm',
+  install : false)
+
 test('test_mat', test_mat)
+test('test_vec', test_vec)
 
 exe = executable('lin_h', 'src/main.c',
   link_args : '-lm',

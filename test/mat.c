@@ -14,6 +14,7 @@ void tearDown(void) {
 void create(void) {
     lin_mat_t *mat = lin_mat_create((lin_mat_shape_t){3, 3});
     TEST_ASSERT_NOT_NULL(mat);
+    TEST_ASSERT_NOT_NULL(mat->elements);
 }
 
 void create_from_array(void) {
