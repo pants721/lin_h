@@ -27,10 +27,6 @@ typedef double lin_decimal_t;
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-#ifndef LIN_VEC_MAX_SIZE
-#define LIN_VEC_MAX_SIZE 1024
-#endif
-
 typedef enum {
     DEGREES,
     RADIANS,
@@ -42,7 +38,7 @@ typedef struct {
 } lin_vec_t;
 
 lin_vec_t *lin_vec_create(size_t dim);
-lin_vec_t *lin_vec_create_from_array(size_t dim, lin_decimal_t arr[LIN_VEC_MAX_SIZE]);
+lin_vec_t *lin_vec_create_from_array(size_t dim, lin_decimal_t *arr);
 lin_vec_t *lin_vec_scalar_mult(lin_vec_t *v, lin_decimal_t k);
 lin_vec_t *lin_vec_add(lin_vec_t *a, lin_vec_t *b);
 lin_vec_t *lin_vec_sub(lin_vec_t *a, lin_vec_t *b);
@@ -75,7 +71,7 @@ lin_vec_t *lin_vec_create(size_t dim) {
     vec->dim = dim;
     return vec;
 }
-lin_vec_t *lin_vec_create_from_array(size_t dim, lin_decimal_t arr[LIN_VEC_MAX_SIZE]) {
+lin_vec_t *lin_vec_create_from_array(size_t dim, lin_decimal_t *arr) {
     lin_vec_t *vec = lin_vec_create(dim);
     
     for (size_t i = 0; i < dim; i++) {
@@ -196,8 +192,8 @@ lin_vec_t *lin_vec_cross(lin_vec_t *a, lin_vec_t *b) {
         exit(EXIT_FAILURE);
     }
 
-    lin_decimal_t res_elements[LIN_VEC_MAX_SIZE] = {
-        a->elements[1] * a->elements[2] - a->elements[2] * b->elements[1],
+    lin_decimal_t res_elements[3] = {
+        a->elements[1] * b->elements[2] - a->elements[2] * b->elements[1],
         a->elements[2] * b->elements[0] - a->elements[0] * b->elements[2],
         a->elements[0] * b->elements[1] - a->elements[1] * b->elements[0],
     };
