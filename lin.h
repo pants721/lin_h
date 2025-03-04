@@ -215,14 +215,6 @@ void _lin_vec_print(lin_vec_t *v) {
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-#ifndef LIN_MAT_MAX_ROWS
-#define LIN_MAT_MAX_ROWS 1024
-#endif
-
-#ifndef LIN_MAT_MAX_COLS
-#define LIN_MAT_MAX_COLS 1024
-#endif
-
 typedef struct {
     size_t rows;
     size_t columns;
