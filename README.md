@@ -3,7 +3,7 @@
 Simple linear algebra library for C
 
 > [!WARNING]
-> This library was made for educational purposes. Be wary of using it in anything actually important.
+> This library was made for educational purposes with my very poor C standards. Be wary of using it in anything actually important.
 
 ## Usage
 To use lin in your project, just include `lin.h` in your compilation.
