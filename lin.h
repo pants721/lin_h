@@ -47,6 +47,7 @@ lin_decimal_t lin_vec_len(lin_vec_t const *v);
 lin_decimal_t lin_vec_angle(lin_vec_t const *a, lin_vec_t const *b, 
                             AngleType angle_type);
 lin_vec_t *lin_vec_cross(lin_vec_t const *a, lin_vec_t const *b);
+lin_vec_t *lin_vec_map(lin_vec_t const *v, lin_decimal_t (*fn)(lin_decimal_t));
 void _lin_vec_print(lin_vec_t const *v);
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -207,6 +208,15 @@ lin_vec_t *lin_vec_cross(lin_vec_t const *a, lin_vec_t const *b) {
     return lin_vec_create_from_array(3, res_elements);
 }
 
+lin_vec_t *lin_vec_map(lin_vec_t const *v, lin_decimal_t (*fn)(lin_decimal_t)) {
+    lin_vec_t *res = lin_vec_create(v->dim);
+    for (size_t i = 0; i < v->dim; i++) {
+        res->elements[i] = fn(v->elements[i]);
+    }
+
+    return res;
+}
+
 void _lin_vec_print(lin_vec_t const *v) {
     printf("[ ");
     for (size_t i = 0; i < v->dim; i++) {
@@ -249,6 +259,7 @@ lin_decimal_t lin_mat_cofactor_of_element(lin_mat_t const *a, size_t row, size_t
 lin_mat_t *lin_mat_cofactor(lin_mat_t const *a);
 lin_mat_t *lin_mat_adj(lin_mat_t const *a);
 lin_mat_t *lin_mat_inv(lin_mat_t const *a);
+lin_mat_t *lin_mat_map(lin_mat_t *mat, lin_decimal_t (*fn)(lin_decimal_t));
 void _lin_mat_print(lin_mat_t const *a);
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -635,6 +646,18 @@ lin_mat_t *lin_mat_inv(lin_mat_t const *a) {
     }
 
     return lin_mat_scalar_mult(adj, (1.0 / det));
+}
+
+lin_mat_t *lin_mat_map(lin_mat_t *mat, lin_decimal_t (*fn)(lin_decimal_t)) {
+    lin_mat_t *res = lin_mat_create(mat->shape);
+    for (size_t i = 0; i < mat->shape.rows; i++) {
+        for (size_t j = 0; j < mat->shape.columns; j++) {
+            size_t idx = i * mat->shape.columns + j;
+            res->elements[idx] = fn(mat->elements[idx]);
+        }
+    }
+
+    return res;
 }
 
 void _lin_mat_print(lin_mat_t const *a) {

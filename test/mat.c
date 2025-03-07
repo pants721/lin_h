@@ -444,6 +444,25 @@ void inv(void) {
     TEST_ASSERT_EQUAL_FLOAT_ARRAY(exp, res->elements, 4);
 }
 
+lin_decimal_t sq(lin_decimal_t n) {
+    return n * n;
+}
+
+void map(void) {
+    float els[2 * 2] = {
+        4, 3,
+        3, 2,
+    };
+    lin_mat_t *mat = lin_mat_create_from_array((lin_mat_shape_t){2, 2}, els);
+    lin_mat_t *res = lin_mat_map(mat, sq);
+    float exp[2 * 2] = {
+        16, 9,
+        9, 4,
+    };
+
+    TEST_ASSERT_EQUAL_FLOAT_ARRAY(exp, res->elements, 4);
+}
+
 int main(void) {
     UNITY_BEGIN();
     RUN_TEST(create);
@@ -468,5 +487,6 @@ int main(void) {
     RUN_TEST(cofactor);
     RUN_TEST(adj);
     RUN_TEST(inv);
+    RUN_TEST(map);
     return UNITY_END();
 }

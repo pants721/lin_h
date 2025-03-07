@@ -108,6 +108,20 @@ void cross(void) {
     TEST_ASSERT_EQUAL_FLOAT_ARRAY(exp, res->elements, 3);
 }
 
+lin_decimal_t sq(lin_decimal_t n) {
+    return n * n;
+}
+
+void map(void){
+    float els[3] = {1, 2, 3};
+    lin_vec_t *vec = lin_vec_create_from_array(3, els);
+    lin_vec_t *res = lin_vec_map(vec, sq);
+
+    float exp[3] = {1, 4, 9};
+
+    TEST_ASSERT_EQUAL_FLOAT_ARRAY(exp, res->elements, 3);
+}
+
 int main(void) {
     UNITY_BEGIN();
     RUN_TEST(create);
@@ -120,5 +134,6 @@ int main(void) {
     RUN_TEST(angle_deg);
     RUN_TEST(angle_rad);
     RUN_TEST(cross);
+    RUN_TEST(map);
     return UNITY_END();
 }
